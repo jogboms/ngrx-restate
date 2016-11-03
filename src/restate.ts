@@ -1,5 +1,5 @@
 /**
- * Persit ngRx States on page reloads
+ * Persist ngRx States on page reloads
  *
  * e.g.
  * const config = {
