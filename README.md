@@ -1,5 +1,6 @@
 # ngrx-restate
-Persit @ngRx Store States on page reloads.
+NgRx-restate is a @ngrx/redux meta-reducer/middleware for persisting Store States on page reloads.  
+It currently supports only `localStorage` for now. 
 
 
 Optional configuration.
