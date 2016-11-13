@@ -4,7 +4,7 @@
  * e.g.
  * const config = {
  *   states: ['reducer_name', ..., 'more_reducer_names'],
- *   storage: localStorage, // Default
+ *   storage: LocalStorage, // Default
  *   delay: 5000
  * }
  * compose(restate(config), combineReducers)({'reducer_name': (state, action) => {}, ..., 'more_reducer_names': (state, action) => {}})
