@@ -7,7 +7,7 @@ Optional configuration.
 ```
 const config = {
    states: ['state_name', ..., 'more_state_names'],
-   storage: localStorage, // Default
+   storage: LocalStorage, // Default
    delay: 5000
  }
 ```
