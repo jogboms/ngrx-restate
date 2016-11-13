@@ -9,7 +9,38 @@
  * }
  * compose(restate(config), combineReducers)({'reducer_name': (state, action) => {}, ..., 'more_reducer_names': (state, action) => {}})
  */
-interface RestateConfig {
+
+/**
+ * Interface for which all forms of custom storage providers must abide to
+ */
+export interface Storage {
+  /**
+   * Set a value to a key
+   * @param {string} key   Unique Identifier for the value on storage
+   * @param {string} value Value to store
+   */
+  set(key: string, value: string): void;
+  /**
+   * Retrieve a value from storage
+   * @param  {string} key Unique Identifier for the value on storage
+   * @return {string}     Content of value
+   */
+  get(key): string;
+  /**
+   * Remove a value from storage
+   * @param {any} key Unique Identifier for the value on storage
+   */
+  remove(key: any): void;
+  /**
+   * Remove all contents from store
+   */
+  clear(): void;
+}
+
+/**
+ * Interface for which Restate's Configuration must abide to
+ */
+export interface RestateConfig {
   /**
    * States to Re-state on page reload. The names should tally with the Original state's name in the store.
    * If left unassigned, All states is Re-state'd back to the Store. Optional.
@@ -19,9 +50,9 @@ interface RestateConfig {
   /**
    * Storage type to use in Persisting state. Should be of key-value type.
    * Defaults to localStorage. Optional.
-   * @type {Object}
+   * @type {Storage}
    */
-  storage?: Object;
+  storage?: Storage;
   /**
    * Debounce delay when persisting states to storage. Delay in milliseconds.
    * Defaults to 3500. Optional.
@@ -29,9 +60,42 @@ interface RestateConfig {
    */
   delay?: number;
 }
+
+/**
+ * window.localStorage implementation of a storage provider
+ * defaults to a plain object storage for non-window environments
+ * @type {Storage}
+ */
+/**
+ * Mock storage object for non-window environment.
+ * @type {Object}
+ */
+var MOCK_Storage = {};
+const LocalStorage: Storage = {
+  set: (key, value) => {
+    typeof window !== 'undefined' ?
+      localStorage.setItem(key, value) : MOCK_Storage[key] = value;
+  },
+  get: (key) => {
+    return typeof window !== 'undefined' ?
+      localStorage.getItem(key) : MOCK_Storage[key];
+  },
+  remove: (key) => {
+    typeof window !== 'undefined' ?
+      localStorage.removeItem(key) : delete MOCK_Storage[key];
+  },
+  clear: () => {
+    typeof window !== 'undefined' ?
+      localStorage.clear() : MOCK_Storage = {};
+  }
+}
+/**
+ * Default configurations for Restate
+ * @type {RestateConfig}
+ */
 const defaults: RestateConfig = {
   states: undefined,
-  storage: localStorage,
+  storage: LocalStorage,
   delay: 3500
 }
 /**
@@ -44,21 +108,23 @@ export default function restate(config: RestateConfig = {}) {
   return (reducer) => {
     const state = {}, key = '__RESTATE__', style = ['color:green;font-weight:700', 'font-weight:normal'],
     save = (state = {}) => {
-      if(config.storage)
-        config.storage[key] = JSON.stringify(state);
+      if(config.storage) {
+        config.storage.set(key, JSON.stringify(state));
+      }
     },
     load = () => {
-      if(config.storage && config.storage[key]) {
-        const data = JSON.parse(config.storage[key]);
-        if(config.states)
+      if(config.storage && config.storage.get(key)) {
+        const data = JSON.parse(config.storage.get(key));
+        if(config.states) {
           config.states.map(n => state[n] = data[n])
-        console.log('%c@ngRx Re-State: %cLoaded state from Storage', ...style);
+        }
+        console.log('%cReState: %cLoaded state(s)', ...style);
         return config.states ? state : data;
       }
       return undefined;
     },
-    persit = (state) => {
-      console.log('%c@ngRx Re-State: %cSaving state to Storage', ...style);
+    persist = (state) => {
+      console.log('%cReState: %cSaving state(s)', ...style);
       save(state);
     },
     throttle = (call, time) => {
@@ -72,7 +138,7 @@ export default function restate(config: RestateConfig = {}) {
         ++max;
       };
     },
-    restate = throttle(persit, config.delay);
+    restate = throttle(persist, config.delay);
 
     return (state = load() || undefined, action) => {
       const new_state = reducer(state, action);
